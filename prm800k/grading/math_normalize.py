@@ -4,11 +4,24 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 import re
 from typing import Optional
 
+def convert_latex_fraction(latex):
+    def process_fraction(match):
+        numerator = match.group(1)
+        denominator = match.group(2)
+        return f'({process_fraction_part(numerator)})/({process_fraction_part(denominator)})'
+
+    def process_fraction_part(expression):
+        if '\\frac' not in expression:
+            return expression
+        return re.sub(r'\\frac{(.*?)}{(.*?)}', process_fraction, expression)
+
+    return process_fraction_part(latex)
 
 def normalize_answer(answer: Optional[str]) -> Optional[str]:
     if answer is None:
         return None
     answer = answer.strip()
+    answer = convert_latex_fraction(answer)
     try:
         # Remove enclosing `\text{}`.
         m = re.search("^\\\\text\{(?P<text>.+?)\}$", answer)
