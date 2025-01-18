@@ -4,6 +4,7 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 import re
 from typing import Optional
 
+
 def convert_latex_fraction(latex):
     def process_fraction(match):
         numerator = match.group(1)
@@ -13,7 +14,7 @@ def convert_latex_fraction(latex):
     def process_fraction_part(expression):
         if '\\frac' not in expression:
             return expression
-        return re.sub(r'\\frac{(.*?)}{(.*?)}', process_fraction, expression)
+        return re.sub(r'\\frac{([^{}]*(?:{[^{}]*}[^{}]*)*)}{([^{}]*(?:{[^{}]*}[^{}]*)*)}', process_fraction, expression)
 
     return process_fraction_part(latex)
 
@@ -21,13 +22,15 @@ def normalize_answer(answer: Optional[str]) -> Optional[str]:
     if answer is None:
         return None
     answer = answer.strip()
-    answer = convert_latex_fraction(answer)
+
     try:
         # Remove enclosing `\text{}`.
         m = re.search("^\\\\text\{(?P<text>.+?)\}$", answer)
         if m is not None:
             answer = m.group("text").strip()
-        return _strip_string(answer)
+        answer = _strip_string(answer)
+        answer = convert_latex_fraction(answer)
+        return answer
     except:
         return answer
 
@@ -151,9 +154,9 @@ def _strip_string(string):
         string = "0" + string
 
     # to consider: get rid of e.g. "k = " or "q = " at beginning
-    if len(string.split("=")) == 2:
-        if len(string.split("=")[0]) <= 2:
-            string = string.split("=")[1]
+    if len(string.split("=")) >= 2:
+        # if len(string.split("=")[0]) <= 2:
+        string = string.split("=")[-1]
 
     # fix sqrt3 --> sqrt{3}
     string = _fix_sqrt(string)
